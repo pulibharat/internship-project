@@ -1,0 +1,97 @@
+import csv
+from collections import defaultdict
+
+FILENAME = "smart_expenses.csv"
+
+def guess_category(description):
+    description = description.lower()
+    if any(word in description for word in ["swiggy", "zomato", "food", "lunch", "dinner", "restaurant"]):
+        return "Food"
+    elif any(word in description for word in ["bus", "uber", "train", "auto", "travel", "ola", "fuel"]):
+        return "Transport"
+    elif any(word in description for word in ["movie", "netflix", "prime", "game", "entertainment"]):
+        return "Entertainment"
+    elif any(word in description for word in ["rent", "electricity", "water", "bill", "house"]):
+        return "Utilities"
+    elif any(word in description for word in ["book", "pen", "stationery", "tuition", "exam", "school", "college"]):
+        return "Education"
+    else:
+        return "Other"
+
+def load_expenses():
+    expenses = []
+    try:
+        with open(FILENAME, mode="r", newline="") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                row['amount'] = float(row['amount'])
+                expenses.append(row)
+    except FileNotFoundError:
+        pass
+    return expenses
+
+def save_expenses(expenses):
+    with open(FILENAME, mode="w", newline="") as file:
+        fieldnames = ["date", "description", "category", "amount"]
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for exp in expenses:
+            writer.writerow(exp)
+
+def add_expense(expenses):
+    description = input("Enter description (e.g., Paid to Swiggy): ")
+    amount = float(input("Enter amount: ₹"))
+    date = input("Enter date (YYYY-MM-DD): ")
+    category = guess_category(description)
+    expense = {"description": description, "amount": amount, "date": date, "category": category}
+    expenses.append(expense)
+    save_expenses(expenses)
+    print(f"Added ✅ Category guessed: {category}")
+
+def view_all_expenses(expenses):
+    print("\n--- All Expenses ---")
+    for exp in expenses:
+        print(f"{exp['date']} - {exp['description']} ({exp['category']}) - ₹{exp['amount']}")
+
+def daily_summary(expenses):
+    print("\n🗓️ --- Daily Summary ---")
+    daily_totals = defaultdict(float)
+    daily_counts = defaultdict(int)
+
+    for exp in expenses:
+        daily_totals[exp['date']] += exp['amount']
+        daily_counts[exp['date']] += 1
+
+    for date in sorted(daily_totals.keys()):
+        total = daily_totals[date]
+        count = daily_counts[date]
+
+        # Small comment based on total amount
+        if total < 200:
+            comment = "Light day 💡"
+        elif total < 500:
+            comment = "Normal day 📊"
+        else:
+            comment = "Heavy spender alert 🚨"
+
+        print(f"{date} ➤ ₹{total:.2f} spent in {count} expenses — {comment}")
+
+
+# --- Main Program ---
+expenses = load_expenses()
+
+while True:
+    print("\n1. Add Expense\n2. Daily Summary\n3. View All Expenses\n4. Exit")
+    choice = input("Choose an option: ")
+
+    if choice == "1":
+        add_expense(expenses)
+    elif choice == "2":
+        daily_summary(expenses)
+    elif choice == "3":
+        view_all_expenses(expenses)
+    elif choice == "4":
+        print("Bye Bharat! Keep tracking like a boss 💼📊")
+        break
+    else:
+        print("Invalid option 🤷")
